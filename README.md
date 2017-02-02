@@ -2,6 +2,14 @@ I downloaded this source code from <https://web.archive.org/web/20080820041248/h
 According to blogpost and COPYING.txt it is licensed as GPL2.
 
 
+Before first run exec:
+```python setup.py build_ext --inplace```
+
+
+Then to run:
+```python vroomDemo.py```
+
+
 Original readme
 ```
 To run VROOM!!!:

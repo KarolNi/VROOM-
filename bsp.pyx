@@ -210,7 +210,7 @@ cdef int lineOfSightC(bspNode *tree, double k[2][2], double s[2][2], clist):
 cdef class cbsp:
 	cdef bspNode *tree
 
-	def __new__(self, node):
+	def __cinit__(self, node):
 		self.tree = makeC_BSP(node)
 
 	def __dealloc__(self):

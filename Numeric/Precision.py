@@ -25,14 +25,18 @@ def _fill_table(typecodes, table={}):
 
 _code_table = _fill_table(typecodes)
 
-PrecisionError = "PrecisionError"
+class PrecisionError (Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 def _lookup(table, key, required_bits):
     lst = table[key]
     for bits, typecode in lst:
         if bits >= required_bits:
             return typecode
-    raise PrecisionError, key+" of "+str(required_bits)+" bits not available on this system"
+    raise PrecisionError ( key+" of "+str(required_bits)+" bits not available on this system")
 
 Character = 'c'
 
