@@ -1,0 +1,122 @@
+*** SDL_mixer-1.2.4/mixer.c	2002-05-19 15:50:35.000000000 -0500
+--- SDL_mixer-1.2.4_mod/mixer.c	2007-01-16 02:00:36.486695232 -0600
+***************
+*** 52,57 ****
+--- 52,58 ----
+  
+  static struct _Mix_Channel {
+  	Mix_Chunk *chunk;
++ 	Mix_Chunk *next_chunk;
+  	int playing;
+  	int paused;
+  	Uint8 *samples;
+***************
+*** 201,232 ****
+  
+  				mix_channel[i].samples += mixable;
+  				mix_channel[i].playing -= mixable;
+! 				/* If looping the sample and we are at its end, make sure
+  				   we will still return a full buffer */
+! 				while ( mix_channel[i].looping && mixable < len ) {
+! 				    	int remaining = len - mixable;
+! 					int alen = mix_channel[i].chunk->alen;
+! 				    	if (remaining > alen) {
+! 						remaining = alen;
+! 				    	}
+! 
+! 					mix_input = Mix_DoEffects(i, mix_channel[i].chunk->abuf, remaining);
+! 					SDL_MixAudio(stream+mixable, mix_input, remaining, volume);
+! 					if (mix_input != mix_channel[i].chunk->abuf)
+! 						free(mix_input);
+! 
+  					--mix_channel[i].looping;
+! 					mix_channel[i].samples = mix_channel[i].chunk->abuf + remaining;
+! 					mix_channel[i].playing = mix_channel[i].chunk->alen - remaining;
+! 					mixable += remaining;
+  				}
+! 				if ( ! mix_channel[i].playing && mix_channel[i].looping ) {
+! 					if ( --mix_channel[i].looping ) {
+! 						mix_channel[i].samples = mix_channel[i].chunk->abuf;
+! 						mix_channel[i].playing = mix_channel[i].chunk->alen;
+! 					}
+  				}
+- 
+  				/* rcg06072001 Alert app if channel is done playing. */
+  				if (!mix_channel[i].playing) {
+  					_Mix_channel_done_playing(i);
+--- 202,239 ----
+  
+  				mix_channel[i].samples += mixable;
+  				mix_channel[i].playing -= mixable;
+! 				/* If looping the sample or if another chunk is queued and we are at the end, make sure
+  				   we will still return a full buffer */
+! 				while ( (mix_channel[i].next_chunk || mix_channel[i].looping) && mixable < len ) {
+! 				    if(mix_channel[i].next_chunk) {
+! 					mix_channel[i].chunk = mix_channel[i].next_chunk;
+! 				    }
+! 				    else {
+  					--mix_channel[i].looping;
+! 				    }
+! 				    int remaining = len - mixable;
+! 				    int alen = mix_channel[i].chunk->alen;
+! 				    if (remaining > alen) {
+! 					remaining = alen;
+! 				    }
+! 				    SDL_MixAudio(stream+mixable, mix_channel[i].chunk->abuf, remaining, volume);
+! 				    mix_channel[i].samples = mix_channel[i].chunk->abuf + remaining;
+! 				    mix_channel[i].playing = mix_channel[i].chunk->alen - remaining;
+! 				    mixable += remaining;
+  				}
+! 				if ( !mix_channel[i].playing) {
+! 				    if (mix_channel[i].next_chunk) {
+! 					mix_channel[i].chunk = mix_channel[i].next_chunk;
+! 					mix_channel[i].next_chunk = NULL;
+! 					mix_channel[i].samples = mix_channel[i].chunk->abuf;
+! 					mix_channel[i].playing = mix_channel[i].chunk->alen;
+! 					_Mix_channel_done_playing(i); // Alert app that chunk is done playing.
+! 				    }
+! 				    else if(mix_channel[i].looping && --mix_channel[i].looping) {
+! 					mix_channel[i].samples = mix_channel[i].chunk->abuf;
+! 					mix_channel[i].playing = mix_channel[i].chunk->alen;
+! 				    }
+  				}
+  				/* rcg06072001 Alert app if channel is done playing. */
+  				if (!mix_channel[i].playing) {
+  					_Mix_channel_done_playing(i);
+***************
+*** 293,298 ****
+--- 300,306 ----
+  	/* Clear out the audio channels */
+  	for ( i=0; i<num_channels; ++i ) {
+  		mix_channel[i].chunk = NULL;
++ 		mix_channel[i].next_chunk = NULL;
+  		mix_channel[i].playing = 0;
+  		mix_channel[i].looping = 0;
+  		mix_channel[i].volume = SDL_MIX_MAXVOLUME;
+***************
+*** 332,337 ****
+--- 340,346 ----
+  		int i;
+  		for(i=num_channels; i < numchans; i++) {
+  			mix_channel[i].chunk = NULL;
++ 			mix_channel[i].next_chunk = NULL;
+  			mix_channel[i].playing = 0;
+  			mix_channel[i].looping = 0;
+  			mix_channel[i].volume = SDL_MIX_MAXVOLUME;
+***************
+*** 768,773 ****
+--- 777,790 ----
+  	return(prev_volume);
+  }
+  
++ /* Queue audio chunk to channel */
++ int Mix_QueueChannel(int which, Mix_Chunk *chunk)
++ {
++ 	mix_channel[which].next_chunk = chunk;
++ 	return(0);
++ }
++ 
++ 
+  /* Halt playing of a particular channel */
+  int Mix_HaltChannel(int which)
+  {

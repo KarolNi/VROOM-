@@ -1,0 +1,16 @@
+*** SDL_mixer-1.2.4/SDL_mixer.h	2002-05-20 11:11:36.000000000 -0500
+--- SDL_mixer-1.2.4_mod/SDL_mixer.h	2007-01-04 19:52:08.000000000 -0600
+***************
+*** 488,493 ****
+--- 488,498 ----
+  extern DECLSPEC int SDLCALL Mix_PlayChannelTimed(int channel, Mix_Chunk *chunk, int loops, int ticks);
+  extern DECLSPEC int SDLCALL Mix_PlayMusic(Mix_Music *music, int loops);
+  
++ /* Queue audio chunk to a specific channel.  Only one chunk may be queued.  If the previous chunk
++    was looping, the new chunk will continue looping, but the move to the new chunk does not
++    itself decrement the loop count. */
++ extern DECLSPEC int SDLCALL Mix_QueueChannel(int channel, Mix_Chunk *chunk);
++ 
+  /* Fade in music or a channel over "ms" milliseconds, same semantics as the "Play" functions */
+  extern DECLSPEC int SDLCALL Mix_FadeInMusic(Mix_Music *music, int loops, int ms);
+  extern DECLSPEC int SDLCALL Mix_FadeInMusicPos(Mix_Music *music, int loops, int ms, double position);
